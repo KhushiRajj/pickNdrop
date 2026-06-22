@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function SharePanel({ result }) {
+export default function SharePanel({ result, options = {} }) {
   const { shareUrl, qrDataUrl, token } = result;
   const [copied, setCopied] = useState(false);
 
@@ -19,6 +19,7 @@ export default function SharePanel({ result }) {
 
   return (
     <div className="share-panel">
+      {/* Header */}
       <div className="share-panel__header">
         <div className="success-badge">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -27,6 +28,23 @@ export default function SharePanel({ result }) {
           Upload complete!
         </div>
         <h2 className="share-panel__title">Your link is ready</h2>
+      </div>
+
+      {/* Security badges */}
+      <div className="badge-row" style={{ marginBottom: '1.5rem' }}>
+        {options.password     && <span className="badge badge--lock">🔒 Password protected</span>}
+        {options.maxDownloads === '1' && <span className="badge badge--once">⚡ One-time link</span>}
+        {options.maxDownloads && options.maxDownloads !== '1' &&
+          <span className="badge badge--once">⬇ Max {options.maxDownloads} downloads</span>}
+        {options.expiresAt    && (
+          <span className="badge badge--ttl">
+            ⏰ Expires {new Date(options.expiresAt).toLocaleString()}
+          </span>
+        )}
+        {options.allowedIps   && <span className="badge">✅ IP whitelist</span>}
+        {options.blockedIps   && <span className="badge">🚫 IP blacklist</span>}
+        {!options.password && !options.maxDownloads && !options.expiresAt &&
+          <span className="badge">🔓 Public link</span>}
       </div>
 
       {/* QR Code */}
@@ -42,7 +60,7 @@ export default function SharePanel({ result }) {
         </button>
       </div>
 
-      {/* Link */}
+      {/* Share Link */}
       <div className="link-box">
         <input
           id="share-link-input"
@@ -73,7 +91,13 @@ export default function SharePanel({ result }) {
 
       {/* Audit log link */}
       <a className="btn-text" href={`/d/${token}?audit=1`} target="_blank" rel="noreferrer">
-        View download log →
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        View download audit log →
       </a>
     </div>
   );

@@ -3,10 +3,11 @@ import { BrowserRouter, Routes, Route, useParams, useSearchParams } from 'react-
 import Uploader from './components/Uploader';
 import SharePanel from './components/SharePanel';
 import Downloader from './components/Downloader';
+import AuditLog from './components/AuditLog';
 
 // ── Upload Page ───────────────────────────────────────────────────────────────
 function UploadPage() {
-  const [result, setResult] = useState(null);
+  const [uploadResult, setUploadResult] = useState(null); // { token, shareUrl, qrDataUrl, options }
 
   return (
     <main className="page page--upload">
@@ -19,15 +20,15 @@ function UploadPage() {
       </header>
 
       <div className="card">
-        {!result ? (
-          <Uploader onComplete={setResult} />
+        {!uploadResult ? (
+          <Uploader onComplete={(result, opts) => setUploadResult({ ...result, options: opts })} />
         ) : (
           <div>
-            <SharePanel result={result} />
+            <SharePanel result={uploadResult} options={uploadResult.options || {}} />
             <button
               className="btn-text"
               style={{ marginTop: '1.5rem' }}
-              onClick={() => setResult(null)}
+              onClick={() => setUploadResult(null)}
             >
               ← Upload another file
             </button>
@@ -36,7 +37,7 @@ function UploadPage() {
       </div>
 
       <footer className="site-footer">
-        <p>Files are stored on AWS S3 · Links expire per your settings · No tracking</p>
+        <p>Files stored on AWS S3 · Zero tracking · Links expire per your settings</p>
       </footer>
     </main>
   );
@@ -59,8 +60,14 @@ function DownloadPage() {
       </header>
 
       <div className="card">
-        <Downloader token={token} showAudit={showAudit} />
+        <Downloader token={token} />
       </div>
+
+      {showAudit && (
+        <div className="card" style={{ marginTop: '1.5rem' }}>
+          <AuditLog token={token} />
+        </div>
+      )}
 
       <footer className="site-footer">
         <p>Powered by pickNdrop · <a href="/">Share your own file</a></p>
