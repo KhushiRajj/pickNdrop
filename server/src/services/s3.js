@@ -7,7 +7,7 @@ const {
   GetObjectCommand,
   HeadObjectCommand,
   ListMultipartUploadsCommand,
-  AbortMultipartUploadCommand: AbortCmd,
+  DeleteObjectCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
@@ -105,6 +105,17 @@ async function listInProgressUploads() {
   return res.Uploads || [];
 }
 
+/**
+ * Delete an object from S3.
+ */
+async function deleteObject(key) {
+  const cmd = new DeleteObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+  });
+  await s3.send(cmd);
+}
+
 module.exports = {
   initMultipart,
   signParts,
@@ -112,4 +123,5 @@ module.exports = {
   abortMultipart,
   getPresignedDownload,
   listInProgressUploads,
+  deleteObject,
 };
