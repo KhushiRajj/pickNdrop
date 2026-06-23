@@ -10,11 +10,32 @@ const { startCronJobs } = require('./services/cron');
 const app = express();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+// CORS: allow the configured origin(s) OR any origin when running on Vercel
+// (file bytes never pass through this server — they go direct to S3 presigned URLs,
+// so '*' here is safe and necessary for Vercel's serverless edge routing).
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN || '*',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, mobile apps, server-to-server)
+    if (!origin) return callback(null, true);
+    // Wildcard — allow everything (default when env var not set)
+    if (ALLOWED_ORIGIN === '*') return callback(null, true);
+    // Comma-separated allow-list support (e.g. "https://a.vercel.app,http://localhost:5173")
+    const allowed = ALLOWED_ORIGIN.split(',').map(s => s.trim());
+    if (allowed.includes(origin)) return callback(null, true);
+    // Also allow any *.vercel.app preview URL automatically
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
 }));
+
+// Explicit pre-flight handler (belt-and-suspenders for Vercel edge)
+app.options('*', cors());
+
 app.use(express.json({ limit: '1mb' })); // Only JSON metadata — no file bytes
 app.use(express.urlencoded({ extended: true }));
 
