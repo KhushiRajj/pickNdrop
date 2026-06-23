@@ -62,6 +62,21 @@ app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', ts: new Date().toISOString() });
 });
 
+// Debug endpoint (safe - only shows masked env info)
+app.get(['/api/debug', '/debug'], (req, res) => {
+  res.json({
+    status: 'server reachable',
+    ts: new Date().toISOString(),
+    NODE_ENV: process.env.NODE_ENV,
+    ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN || '(not set - defaults to *)',
+    BASE_URL: process.env.BASE_URL || '(not set)',
+    HAS_SUPABASE_URL: !!process.env.SUPABASE_URL,
+    HAS_AWS_KEY: !!process.env.AWS_ACCESS_KEY_ID,
+    request_origin: req.get('origin') || '(no origin header)',
+    request_host: req.get('host'),
+  });
+});
+
 // 404 fallback for API
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Not found' });
