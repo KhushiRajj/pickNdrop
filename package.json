@@ -2,14 +2,11 @@
   "name": "pickndrop",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "client",
-    "server"
-  ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
-    "build": "npm run build --workspace=client",
-    "start": "npm run start --workspace=server"
+    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "build": "cd client && npm run build",
+    "vercel-build": "cd client && npm install && npm run build",
+    "start": "cd server && npm start"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
