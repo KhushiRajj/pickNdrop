@@ -3,7 +3,13 @@ import { initUpload, signParts, uploadChunkToS3, completeUpload, abortUpload } f
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
 
-export default function Uploader({ onComplete }) {
+const TEMPLATES = [
+  { id: 't1', name: 'youtube_intro_template.prproj', size: 8.5 * 1024 * 1024, label: 'YouTube Intro', desc: 'Modern intro with text overlays', type: 'application/octet-stream', bg: 'linear-gradient(135deg, #f43f5e, #be123c)' },
+  { id: 't2', name: 'tiktok_slideshow.aep', size: 4.2 * 1024 * 1024, label: 'TikTok Slideshow', desc: 'Fast-paced edits with transitions', type: 'application/octet-stream', bg: 'linear-gradient(135deg, #a855f7, #6b21a8)' },
+  { id: 't3', name: 'corporate_presentation.key', size: 15.6 * 1024 * 1024, label: 'Corporate Promo', desc: 'Clean layouts and chart diagrams', type: 'application/octet-stream', bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' },
+];
+
+export default function Uploader({ onComplete, isDark, toggleTheme }) {
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -21,6 +27,16 @@ export default function Uploader({ onComplete }) {
   const abortRef = useRef(false);
   const uploadStateRef = useRef(null);
   const [resumeSession, setResumeSession] = useState(null);
+
+  // Custom VEED modal states
+  const [activeTab, setActiveTab] = useState('blank-project'); // 'blank-project' | 'use-template'
+  
+  // Quick actions simulations
+  const [recording, setRecording] = useState(false);
+  const [recTimer, setRecTimer] = useState(3);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const [urlError, setUrlError] = useState('');
 
   const sessionKey = file ? `pickndrop-upload-${file.name}-${file.size}-${file.lastModified}` : '';
 
@@ -43,6 +59,21 @@ export default function Uploader({ onComplete }) {
     setResumeSession(null);
   }, [file, sessionKey]);
 
+  // Screen recording simulation timer
+  useEffect(() => {
+    let t;
+    if (recording) {
+      if (recTimer > 0) {
+        t = setTimeout(() => setRecTimer(v => v - 1), 1000);
+      } else {
+        setRecording(false);
+        // Create simulated recorded file
+        loadMockMedia('recorded_clip.webm', 8.5 * 1024 * 1024, 'video/webm');
+      }
+    }
+    return () => clearTimeout(t);
+  }, [recording, recTimer]);
+
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     setDragging(false);
@@ -55,10 +86,40 @@ export default function Uploader({ onComplete }) {
     if (f) { setFile(f); setError(''); }
   };
 
+  // Mock file generator
+  const loadMockMedia = (filename, sizeBytes, mimeType) => {
+    const blob = new Blob([new Uint8Array(sizeBytes)], { type: mimeType });
+    const mockFile = new File([blob], filename, { type: mimeType, lastModified: Date.now() });
+    setFile(mockFile);
+    setError('');
+    // Clear link input / rec overlay
+    setShowLinkInput(false);
+    setUrlInput('');
+  };
+
+  const startSimulatedRecording = () => {
+    setRecTimer(3);
+    setRecording(true);
+    setFile(null);
+  };
+
+  const submitUrlImport = (e) => {
+    e.preventDefault();
+    if (!urlInput.trim()) return;
+    if (!urlInput.startsWith('http://') && !urlInput.startsWith('https://')) {
+      setUrlError('Please enter a valid URL (starting with http:// or https://)');
+      return;
+    }
+    setUrlError('');
+    // Simulate link fetch
+    const name = urlInput.split('/').pop().split('?')[0] || 'remote_file.bin';
+    loadMockMedia(name, 15.6 * 1024 * 1024, 'application/octet-stream');
+  };
+
   const formatBytes = (b) => {
     if (b < 1024) return `${b} B`;
     if (b < 1024 ** 2) return `${(b / 1024).toFixed(1)} KB`;
-    if (b < 1024 ** 3) return `${(b / 1024 ** 2).toFixed(1)} MB`;
+    if (b < 1024 ** 2 * 1024) return `${(b / 1024 ** 2).toFixed(1)} MB`;
     return `${(b / 1024 ** 3).toFixed(2)} GB`;
   };
 
@@ -207,198 +268,201 @@ export default function Uploader({ onComplete }) {
     }
   };
 
-  return (
-    <div className="uploader">
-      {/* Drop Zone */}
-      <div
-        className={`drop-zone ${dragging ? 'drop-zone--active' : ''} ${file ? 'drop-zone--has-file' : ''}`}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => !file && document.getElementById('file-input').click()}
-      >
-        <input
-          id="file-input"
-          type="file"
-          style={{ display: 'none' }}
-          onChange={handleFileSelect}
-        />
+  // Mimetype and name extensions based file icon selector
+  const getFileEmoji = (mimeType, name) => {
+    if (mimeType) {
+      if (mimeType.startsWith('video/')) return '🎬';
+      if (mimeType.startsWith('audio/')) return '🎵';
+      if (mimeType.startsWith('image/')) return '🖼️';
+      if (mimeType === 'application/pdf') return '📄';
+      if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar') || mimeType.includes('compressed')) return '🗜️';
+      if (mimeType.startsWith('text/') || mimeType.includes('json') || mimeType.includes('xml') || mimeType.includes('javascript')) return '📝';
+    }
+    const ext = name.split('.').pop().toLowerCase();
+    const map = {
+      mp4: '🎬', mov: '🎬', webm: '🎬',
+      mp3: '🎵', wav: '🎵', flac: '🎵',
+      png: '🖼️', jpg: '🖼️', jpeg: '🖼️', svg: '🖼️', webp: '🖼️',
+      zip: '🗜️', rar: '🗜️', '7z': '🗜️', tar: '🗜️',
+      txt: '📝', js: '📝', ts: '📝', html: '📝', css: '📝', json: '📝',
+      pdf: '📄',
+    };
+    return map[ext] || '📁';
+  };
 
-        {!file ? (
-          <div className="drop-zone__empty">
-            <div className="drop-zone__icon">
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
+  return (
+    <div className="veed-modal">
+      
+      {/* ── Main Content Panel ────────────────────────────────────────── */}
+      <main className="veed-content">
+        
+        {/* If file is active: display encryption settings and upload controls */}
+        {file ? (
+          <div className="active-file-panel">
+            <div className="active-file-card">
+              <div className="active-file-card__icon">{getFileEmoji(file.type, file.name)}</div>
+              <div className="active-file-card__meta">
+                <h4 className="active-file-card__name" title={file.name}>{file.name}</h4>
+                <p className="active-file-card__size">{formatBytes(file.size)}</p>
+              </div>
+              {!uploading && (
+                <button className="btn-close-active" onClick={() => setFile(null)} title="Clear file">✕</button>
+              )}
             </div>
-            <p className="drop-zone__title">Drop your file here</p>
-            <p className="drop-zone__sub">or click to browse · Any file type · No size limit</p>
-          </div>
-        ) : (
-          <div className="drop-zone__file">
-            <div className="file-icon">{getFileEmoji(file.name)}</div>
-            <div className="file-meta">
-              <p className="file-name">{file.name}</p>
-              <p className="file-size">{formatBytes(file.size)}</p>
-            </div>
+
+            {/* Options Toggle */}
             {!uploading && (
-              <button
-                className="btn-icon"
-                onClick={(e) => { e.stopPropagation(); setFile(null); setProgress(0); }}
-              >✕</button>
+              <button className="btn-text btn-text--options" style={{ marginTop: '0.5rem' }} onClick={() => setShowOptions(v => !v)}>
+                <span>{showOptions ? '▲' : '▼'}</span>
+                {showOptions ? 'Hide security options' : 'Configure security & expiry options'}
+              </button>
+            )}
+
+            {/* Options Form */}
+            {showOptions && !uploading && (
+              <div className="options-panel">
+                <div className="options-grid">
+                  <div className="field">
+                    <label className="field__label">🔒 Password</label>
+                    <input
+                      className="field__input"
+                      type="password"
+                      placeholder="Leave blank for no password"
+                      value={options.password}
+                      onChange={e => setOptions(o => ({ ...o, password: e.target.value }))}
+                    />
+                  </div>
+                  <div className="field">
+                    <label className="field__label">⬇ Max downloads</label>
+                    <input
+                      className="field__input"
+                      type="number"
+                      min="1"
+                      placeholder="Unlimited"
+                      value={options.maxDownloads}
+                      onChange={e => setOptions(o => ({ ...o, maxDownloads: e.target.value }))}
+                    />
+                  </div>
+                  <div className="field">
+                    <label className="field__label">⏰ Expires at</label>
+                    <input
+                      className="field__input"
+                      type="datetime-local"
+                      value={options.expiresAt}
+                      onChange={e => setOptions(o => ({ ...o, expiresAt: e.target.value }))}
+                    />
+                  </div>
+                  <div className="field">
+                    <label className="field__label">✅ Allowed IPs</label>
+                    <input
+                      className="field__input"
+                      type="text"
+                      placeholder="Comma-separated list"
+                      value={options.allowedIps}
+                      onChange={e => setOptions(o => ({ ...o, allowedIps: e.target.value }))}
+                    />
+                  </div>
+                  <div className="field">
+                    <label className="field__label">🚫 Blocked IPs</label>
+                    <input
+                      className="field__input"
+                      type="text"
+                      placeholder="Comma-separated list"
+                      value={options.blockedIps}
+                      onChange={e => setOptions(o => ({ ...o, blockedIps: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="ttl-presets">
+                  <span className="field__label">Quick expiry:</span>
+                  {[
+                    { label: '1 hour', hours: 1 },
+                    { label: '24 hours', hours: 24 },
+                    { label: '7 days', hours: 168 },
+                  ].map(({ label, hours }) => (
+                    <button
+                      key={hours}
+                      className="btn-preset"
+                      onClick={() => {
+                        const d = new Date(Date.now() + hours * 3600 * 1000);
+                        setOptions(o => ({ ...o, expiresAt: d.toISOString().slice(0, 16) }));
+                      }}
+                    >{label}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upload Progress */}
+            {uploading && (
+              <div className="progress-wrap">
+                <div className="progress-bar">
+                  <div className="progress-bar__fill" style={{ width: `${progress}%` }} />
+                </div>
+                <div className="progress-meta">
+                  <span>{progress}% uploaded ({formatBytes((progress / 100) * file.size)} of {formatBytes(file.size)})</span>
+                  <button className="btn-cancel" onClick={cancelUpload}>Cancel</button>
+                </div>
+                <div className="chunk-grid">
+                  {chunkProgress.map((p, i) => (
+                    <div key={i} className={`chunk-dot ${p === 100 ? 'chunk-dot--done' : p > 0 ? 'chunk-dot--active' : ''}`} title={`Part ${i + 1}: ${p}%`} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {error && <p className="error-msg">{error}</p>}
+
+            {/* Action buttons */}
+            {!uploading && (
+              <div style={{ marginTop: '1.5rem' }}>
+                {resumeSession ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <button className="btn-upload" onClick={() => startUpload(true)}>
+                      Resume Upload ({Math.round((resumeSession.completedParts.length / Math.ceil(file.size / CHUNK_SIZE)) * 100)}% done)
+                    </button>
+                    <button className="btn-text" style={{ alignSelf: 'center', marginTop: 0 }} onClick={() => startUpload(false)}>
+                      Or start clean (ignores previous progress)
+                    </button>
+                  </div>
+                ) : (
+                  <button className="btn-upload" onClick={() => startUpload(false)}>
+                    ⚡ Encrypt & Share Securely
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
-
-      {/* Options Toggle */}
-      {file && !uploading && (
-        <button className="btn-text" onClick={() => setShowOptions(v => !v)}>
-          <span>{showOptions ? '▲' : '▼'}</span>
-          {showOptions ? 'Hide options' : 'Security & expiry options'}
-        </button>
-      )}
-
-      {/* Options Panel */}
-      {showOptions && file && !uploading && (
-        <div className="options-panel">
-          <div className="options-grid">
-            <div className="field">
-              <label className="field__label">🔒 Password</label>
-              <input
-                className="field__input"
-                type="password"
-                placeholder="Leave blank for no password"
-                value={options.password}
-                onChange={e => setOptions(o => ({ ...o, password: e.target.value }))}
-              />
-            </div>
-            <div className="field">
-              <label className="field__label">⬇ Max downloads</label>
-              <input
-                className="field__input"
-                type="number"
-                min="1"
-                placeholder="Unlimited"
-                value={options.maxDownloads}
-                onChange={e => setOptions(o => ({ ...o, maxDownloads: e.target.value }))}
-              />
-            </div>
-            <div className="field">
-              <label className="field__label">⏰ Expires at</label>
-              <input
-                className="field__input"
-                type="datetime-local"
-                value={options.expiresAt}
-                onChange={e => setOptions(o => ({ ...o, expiresAt: e.target.value }))}
-              />
-            </div>
-            <div className="field">
-              <label className="field__label">✅ Allowed IPs <span className="field__hint">(comma-separated)</span></label>
-              <input
-                className="field__input"
-                type="text"
-                placeholder="e.g. 192.168.1.1, 10.0.0.2"
-                value={options.allowedIps}
-                onChange={e => setOptions(o => ({ ...o, allowedIps: e.target.value }))}
-              />
-            </div>
-            <div className="field">
-              <label className="field__label">🚫 Blocked IPs <span className="field__hint">(comma-separated)</span></label>
-              <input
-                className="field__input"
-                type="text"
-                placeholder="e.g. 1.2.3.4"
-                value={options.blockedIps}
-                onChange={e => setOptions(o => ({ ...o, blockedIps: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="ttl-presets">
-            <span className="field__label">Quick expiry:</span>
-            {[
-              { label: '1 hour', hours: 1 },
-              { label: '24 hours', hours: 24 },
-              { label: '7 days', hours: 168 },
-            ].map(({ label, hours }) => (
-              <button
-                key={hours}
-                className="btn-preset"
-                onClick={() => {
-                  const d = new Date(Date.now() + hours * 3600 * 1000);
-                  setOptions(o => ({ ...o, expiresAt: d.toISOString().slice(0, 16) }));
-                }}
-              >{label}</button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Upload Progress */}
-      {uploading && (
-        <div className="progress-wrap">
-          <div className="progress-bar">
-            <div className="progress-bar__fill" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="progress-meta">
-            <span>{progress}% uploaded</span>
-            <button className="btn-cancel" onClick={cancelUpload}>Cancel</button>
-          </div>
-          <div className="chunk-grid">
-            {chunkProgress.map((p, i) => (
-              <div key={i} className={`chunk-dot ${p === 100 ? 'chunk-dot--done' : p > 0 ? 'chunk-dot--active' : ''}`} title={`Part ${i + 1}: ${p}%`} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && <p className="error-msg">{error}</p>}
-
-      {/* Upload Button */}
-      {file && !uploading && (
-        resumeSession ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
-            <button className="btn-upload" onClick={() => startUpload(true)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              Resume Upload ({Math.round((resumeSession.completedParts.length / Math.ceil(file.size / CHUNK_SIZE)) * 100)}% done)
-            </button>
-            <button className="btn-text" style={{ alignSelf: 'center', marginTop: 0 }} onClick={() => startUpload(false)}>
-              Or start clean (ignores previous progress)
-            </button>
-          </div>
         ) : (
-          <button className="btn-upload" onClick={() => startUpload(false)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            Upload & Generate Link
-          </button>
-        )
-      )}
+          
+          /* Main Dashboard Views - Just Simple Drop Zone */
+          <div className="veed-main-scroll" style={{ padding: '2.5rem' }}>
+            <div
+              className={`veed-dropzone ${dragging ? 'veed-dropzone--active' : ''}`}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => document.getElementById('file-input').click()}
+              style={{ flex: 1, display: 'flex', minHeight: '320px', justifyContent: 'center' }}
+            >
+              <input
+                id="file-input"
+                type="file"
+                style={{ display: 'none' }}
+                onChange={handleFileSelect}
+              />
+              <svg className="veed-dropzone__icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: '1rem' }}>
+                <path d="M12 16V8m0 0l-4 4m4-4l4 4" />
+                <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" />
+              </svg>
+              <h3 className="veed-dropzone__title">Upload a File</h3>
+              <p className="veed-dropzone__sub">Click to browse, or drag & drop a file here</p>
+            </div>
+          </div>
+        )}
+
+      </main>
+
     </div>
   );
-}
-
-function getFileEmoji(name) {
-  const ext = name.split('.').pop().toLowerCase();
-  const map = {
-    pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
-    ppt: '📑', pptx: '📑', zip: '🗜', rar: '🗜', '7z': '🗜',
-    mp4: '🎬', mov: '🎬', avi: '🎬', mkv: '🎬',
-    mp3: '🎵', wav: '🎵', flac: '🎵',
-    jpg: '🖼', jpeg: '🖼', png: '🖼', gif: '🖼', svg: '🖼', webp: '🖼',
-    js: '📜', ts: '📜', jsx: '📜', tsx: '📜', py: '🐍',
-    json: '📋', xml: '📋', csv: '📋',
-    exe: '⚙️', dmg: '⚙️', apk: '⚙️',
-  };
-  return map[ext] || '📁';
 }

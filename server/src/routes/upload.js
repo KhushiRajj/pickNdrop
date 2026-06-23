@@ -108,7 +108,15 @@ router.post('/complete', async (req, res) => {
     if (linkErr) throw linkErr;
 
     // 4. Generate QR code
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    let baseUrl = process.env.BASE_URL;
+    if (!baseUrl) {
+      const host = req.get('host');
+      if (host.includes('localhost:3001') || host.includes('127.0.0.1:3001')) {
+        baseUrl = `${req.protocol}://${host.replace('3001', '5173')}`;
+      } else {
+        baseUrl = `${req.protocol}://${host}`;
+      }
+    }
     const shareUrl = `${baseUrl}/d/${token}`;
     const qrDataUrl = await generateQR(shareUrl);
 

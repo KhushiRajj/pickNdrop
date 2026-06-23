@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const express = require('express');
 const cors = require('cors');
 
@@ -23,8 +24,16 @@ app.use('/api/download', downloadRouter);
 
 // Legacy /d/:token redirect (for direct browser hits)
 app.get('/d/:token', (req, res) => {
-  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-  res.redirect(`${baseUrl}/d/${req.params.token}`);
+  const host = req.get('host');
+  let clientUrl = process.env.ALLOWED_ORIGIN;
+  if (!clientUrl) {
+    if (host.includes('localhost:3001') || host.includes('127.0.0.1:3001')) {
+      clientUrl = `${req.protocol}://${host.replace('3001', '5173')}`;
+    } else {
+      clientUrl = `${req.protocol}://${host}`;
+    }
+  }
+  res.redirect(`${clientUrl}/d/${req.params.token}`);
 });
 
 // Health check

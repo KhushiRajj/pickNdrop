@@ -1,39 +1,60 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useParams, useSearchParams } from 'react-router-dom';
 import Uploader from './components/Uploader';
 import SharePanel from './components/SharePanel';
 import Downloader from './components/Downloader';
 import AuditLog from './components/AuditLog';
 
+// ── Shared Navigation Bar ─────────────────────────────────────────────────────
+function NavBar({ isDark, toggleTheme }) {
+  return (
+    <header className="site-nav">
+      <div className="site-nav__container">
+        <a href="/" className="logo">
+          <span className="logo__icon">⚡</span>
+          <span className="logo__text">pick<span className="logo__accent">N</span>drop</span>
+        </a>
+        
+        <nav className="site-nav__links">
+          <div className="theme-switch-row">
+            <span className="theme-switch-label">{isDark ? '🌙 Dark' : '☀️ Light'}</span>
+            <button className="theme-switch-btn" onClick={toggleTheme} aria-label="Toggle theme">
+              <span className="theme-switch-dot" />
+            </button>
+          </div>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
 // ── Upload Page ───────────────────────────────────────────────────────────────
-function UploadPage() {
+function UploadPage({ isDark, toggleTheme }) {
   const [uploadResult, setUploadResult] = useState(null); // { token, shareUrl, qrDataUrl, options }
 
   return (
     <main className="page page--upload">
-      <header className="site-header">
-        <div className="logo">
-          <span className="logo__icon">⚡</span>
-          <span className="logo__text">pick<span className="logo__accent">N</span>drop</span>
+      <div className="upload-container">
+        <div className="card card--uploader-card">
+          {!uploadResult ? (
+            <Uploader 
+              onComplete={(result, opts) => setUploadResult({ ...result, options: opts })} 
+              isDark={isDark}
+              toggleTheme={toggleTheme}
+            />
+          ) : (
+            <div>
+              <SharePanel result={uploadResult} options={uploadResult.options || {}} />
+              <button
+                className="btn-text"
+                style={{ marginTop: '1.5rem' }}
+                onClick={() => setUploadResult(null)}
+              >
+                ← Upload another file
+              </button>
+            </div>
+          )}
         </div>
-        <p className="tagline">Secure file sharing — chunked, encrypted, self-destructing</p>
-      </header>
-
-      <div className="card">
-        {!uploadResult ? (
-          <Uploader onComplete={(result, opts) => setUploadResult({ ...result, options: opts })} />
-        ) : (
-          <div>
-            <SharePanel result={uploadResult} options={uploadResult.options || {}} />
-            <button
-              className="btn-text"
-              style={{ marginTop: '1.5rem' }}
-              onClick={() => setUploadResult(null)}
-            >
-              ← Upload another file
-            </button>
-          </div>
-        )}
       </div>
 
       <footer className="site-footer">
@@ -51,14 +72,6 @@ function DownloadPage() {
 
   return (
     <main className="page page--download">
-      <header className="site-header">
-        <div className="logo">
-          <span className="logo__icon">⚡</span>
-          <span className="logo__text">pick<span className="logo__accent">N</span>drop</span>
-        </div>
-        <p className="tagline">Someone shared a file with you</p>
-      </header>
-
       <div className="card">
         <Downloader token={token} />
       </div>
@@ -78,12 +91,30 @@ function DownloadPage() {
 
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
+  const [isDark, setIsDark] = useState(true); // Default to Dark Theme
+
+  const toggleTheme = () => setIsDark(prev => !prev);
+
+  // Apply classes to document.body so styling variable scopes resolve globally
+  useEffect(() => {
+    if (isDark) {
+      document.body.classList.add('theme-dark');
+      document.body.classList.remove('theme-light');
+    } else {
+      document.body.classList.add('theme-light');
+      document.body.classList.remove('theme-dark');
+    }
+  }, [isDark]);
+
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<UploadPage />} />
-        <Route path="/d/:token" element={<DownloadPage />} />
-      </Routes>
+      <div className="app-root">
+        <NavBar isDark={isDark} toggleTheme={toggleTheme} />
+        <Routes>
+          <Route path="/" element={<UploadPage isDark={isDark} toggleTheme={toggleTheme} />} />
+          <Route path="/d/:token" element={<DownloadPage />} />
+        </Routes>
+      </div>
     </BrowserRouter>
   );
 }
