@@ -19,8 +19,8 @@ app.use(express.json({ limit: '1mb' })); // Only JSON metadata — no file bytes
 app.use(express.urlencoded({ extended: true }));
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use('/api/upload', uploadRouter);
-app.use('/api/download', downloadRouter);
+app.use(['/api/upload', '/upload'], uploadRouter);
+app.use(['/api/download', '/download'], downloadRouter);
 
 // Legacy /d/:token redirect (for direct browser hits)
 app.get('/d/:token', (req, res) => {
@@ -37,7 +37,7 @@ app.get('/d/:token', (req, res) => {
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', ts: new Date().toISOString() });
 });
 
