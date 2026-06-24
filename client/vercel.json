@@ -1,6 +1,10 @@
 {
   "version": 2,
   "rewrites": [
+    { "source": "/api/upload/init", "destination": "/api/upload/init.js" },
+    { "source": "/api/upload/sign", "destination": "/api/upload/sign.js" },
+    { "source": "/api/upload/complete", "destination": "/api/upload/complete.js" },
+    { "source": "/api/upload/abort", "destination": "/api/upload/abort.js" },
     { "source": "/api/download/info/:token", "destination": "/api/download/info.js?token=:token" },
     { "source": "/api/download/:token/verify", "destination": "/api/download/verify.js?token=:token" },
     { "source": "/api/download/log/:token", "destination": "/api/download/log.js?token=:token" },

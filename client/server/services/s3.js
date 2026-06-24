@@ -33,7 +33,6 @@ async function initMultipart(key, contentType) {
     Bucket: BUCKET,
     Key: key,
     ContentType: contentType || 'application/octet-stream',
-    ServerSideEncryption: 'AES256',
   });
   const res = await s3.send(cmd);
   return { uploadId: res.UploadId, key };
