@@ -9,6 +9,13 @@ const { startCronJobs } = require('./services/cron');
 
 const app = express();
 
+app.use((req, res, next) => {
+  if (req.originalUrl && req.originalUrl !== req.url) {
+    req.url = req.originalUrl;
+  }
+  next();
+});
+
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 
 app.use(cors({
