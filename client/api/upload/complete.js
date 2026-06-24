@@ -1,9 +1,9 @@
 const { runCors } = require('../helper');
 const { nanoid } = require('nanoid');
 const bcrypt = require('bcryptjs');
-const supabase = require('../../../../server/src/db/supabase');
-const { completeMultipart } = require('../../../../server/src/services/s3');
-const { generateQR } = require('../../../../server/src/services/qr');
+const supabase = require('../server/db/supabase');
+const { completeMultipart } = require('../server/services/s3');
+const { generateQR } = require('../server/services/qr');
 
 module.exports = async (req, res) => {
   if (runCors(req, res)) return;
