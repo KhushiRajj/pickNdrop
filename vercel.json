@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "outputDirectory": "client/dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/d/(.*)", "destination": "/index.html" },
