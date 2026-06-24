@@ -1,5 +1,5 @@
 const { runCors } = require('../helper');
-const supabase = require('../server/db/supabase');
+const supabase = require('../../server/db/supabase');
 
 async function loadShareLink(token) {
   const { data, error } = await supabase

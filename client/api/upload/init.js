@@ -1,7 +1,7 @@
 const { runCors } = require('../helper');
 const { nanoid } = require('nanoid');
-const supabase = require('../server/db/supabase');
-const { initMultipart } = require('../server/services/s3');
+const supabase = require('../../server/db/supabase');
+const { initMultipart } = require('../../server/services/s3');
 
 const CHUNK_SIZE = 5 * 1024 * 1024;
 
