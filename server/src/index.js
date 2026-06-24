@@ -74,9 +74,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error', details: err.message });
 });
 
-const PORT = process.env.PORT || 3001;
-
-if (process.env.NODE_ENV !== 'production') {
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
     console.log(`[SERVER] pickNdrop API running on http://localhost:${PORT}`);
     startCronJobs();
