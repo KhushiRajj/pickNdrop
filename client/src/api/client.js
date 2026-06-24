@@ -5,7 +5,20 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// ── Upload API ────────────────────────────────────────────────────────────────
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      const status = error.response.status;
+      if (status === 404 || status === 500) {
+        console.log(`[API ERROR] Encountered error ${status}:`, error.response.data);
+      }
+    } else {
+      console.log(`[API ERROR] Network/server error: ${error.message}`);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const initUpload = (filename, fileSize, mimeType) =>
   api.post('/upload/init', { filename, fileSize, mimeType }).then(r => r.data);
@@ -19,7 +32,6 @@ export const completeUpload = (s3Key, uploadId, fileId, parts, options = {}) =>
 export const abortUpload = (s3Key, uploadId, fileId) =>
   api.post('/upload/abort', { s3Key, uploadId, fileId }).then(r => r.data);
 
-// Upload a single chunk directly to S3 via presigned URL (no Vercel involved)
 export const uploadChunkToS3 = async (presignedUrl, chunk, onProgress) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -43,8 +55,6 @@ export const uploadChunkToS3 = async (presignedUrl, chunk, onProgress) => {
     xhr.send(chunk);
   });
 };
-
-// ── Download API ──────────────────────────────────────────────────────────────
 
 export const getLinkInfo = (token) =>
   api.get(`/download/info/${token}`).then(r => r.data);

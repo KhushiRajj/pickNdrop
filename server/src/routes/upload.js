@@ -7,12 +7,8 @@ const supabase = require('../db/supabase');
 const { initMultipart, signParts, completeMultipart, abortMultipart } = require('../services/s3');
 const { generateQR } = require('../services/qr');
 
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
+const CHUNK_SIZE = 5 * 1024 * 1024;
 
-// ─── POST /api/upload/init ────────────────────────────────────────────────────
-// Initiates an S3 multipart upload.
-// Body: { filename, fileSize, mimeType }
-// Returns: { uploadId, s3Key, totalParts }
 router.post('/init', async (req, res) => {
   try {
     const { filename, fileSize, mimeType } = req.body;
@@ -26,7 +22,6 @@ router.post('/init', async (req, res) => {
 
     const { uploadId } = await initMultipart(s3Key, mimeType);
 
-    // Insert a pending file record
     const { data, error } = await supabase.from('files').insert({
       original_name: filename,
       s3_key: s3Key,
@@ -45,10 +40,6 @@ router.post('/init', async (req, res) => {
   }
 });
 
-// ─── POST /api/upload/sign ────────────────────────────────────────────────────
-// Returns presigned PUT URLs for given part numbers.
-// Body: { s3Key, uploadId, partNumbers: [1, 2, 3, ...] }
-// Returns: { parts: [{ partNumber, url }] }
 router.post('/sign', async (req, res) => {
   try {
     const { s3Key, uploadId, partNumbers } = req.body;
@@ -63,14 +54,6 @@ router.post('/sign', async (req, res) => {
   }
 });
 
-// ─── POST /api/upload/complete ────────────────────────────────────────────────
-// Completes multipart, records file, creates share link, generates QR.
-// Body: {
-//   s3Key, uploadId, fileId,
-//   parts: [{ PartNumber, ETag }],
-//   options: { password?, maxDownloads?, expiresAt?, allowedIps?, blockedIps? }
-// }
-// Returns: { token, shareUrl, qrDataUrl }
 router.post('/complete', async (req, res) => {
   try {
     const { s3Key, uploadId, fileId, parts, options = {} } = req.body;
@@ -78,17 +61,14 @@ router.post('/complete', async (req, res) => {
       return res.status(400).json({ error: 's3Key, uploadId, fileId, and parts[] are required' });
     }
 
-    // 1. Complete the S3 multipart upload
     await completeMultipart(s3Key, uploadId, parts);
 
-    // 2. Mark file as complete in DB
     const { error: fileErr } = await supabase
       .from('files')
       .update({ is_complete: true, upload_id: null })
       .eq('id', fileId);
     if (fileErr) throw fileErr;
 
-    // 3. Build share_link row
     const token = nanoid(12);
     const shareData = {
       file_id: fileId,
@@ -107,7 +87,6 @@ router.post('/complete', async (req, res) => {
     const { error: linkErr } = await supabase.from('share_links').insert(shareData);
     if (linkErr) throw linkErr;
 
-    // 4. Generate QR code
     let baseUrl = process.env.BASE_URL;
     if (!baseUrl) {
       const host = req.get('host');
@@ -127,9 +106,6 @@ router.post('/complete', async (req, res) => {
   }
 });
 
-// ─── POST /api/upload/abort ───────────────────────────────────────────────────
-// Aborts a multipart upload and removes the pending DB record.
-// Body: { s3Key, uploadId, fileId }
 router.post('/abort', async (req, res) => {
   try {
     const { s3Key, uploadId, fileId } = req.body;

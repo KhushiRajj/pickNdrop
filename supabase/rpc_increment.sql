@@ -1,10 +1,3 @@
--- ============================================================
--- Atomic increment for one-time download enforcement
--- Run this in Supabase SQL Editor after schema.sql
--- ============================================================
-
--- Atomically increments download_count only if under max_downloads.
--- Returns the new count, or -1 if the limit was already reached.
 create or replace function increment_download_count(link_id uuid, max_val int)
 returns int
 language plpgsql
@@ -19,7 +12,7 @@ begin
   returning download_count into new_count;
 
   if not found then
-    return -1; -- limit already reached
+    return -1;
   end if;
 
   return new_count;

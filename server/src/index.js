@@ -9,22 +9,14 @@ const { startCronJobs } = require('./services/cron');
 
 const app = express();
 
-// ── Middleware ────────────────────────────────────────────────────────────────
-// CORS: allow the configured origin(s) OR any origin when running on Vercel
-// (file bytes never pass through this server — they go direct to S3 presigned URLs,
-// so '*' here is safe and necessary for Vercel's serverless edge routing).
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (curl, mobile apps, server-to-server)
     if (!origin) return callback(null, true);
-    // Wildcard — allow everything (default when env var not set)
     if (ALLOWED_ORIGIN === '*') return callback(null, true);
-    // Comma-separated allow-list support (e.g. "https://a.vercel.app,http://localhost:5173")
     const allowed = ALLOWED_ORIGIN.split(',').map(s => s.trim());
     if (allowed.includes(origin)) return callback(null, true);
-    // Also allow any *.vercel.app preview URL automatically
     if (origin.endsWith('.vercel.app')) return callback(null, true);
     callback(new Error(`CORS: origin ${origin} not allowed`));
   },
@@ -33,17 +25,14 @@ app.use(cors({
   credentials: false,
 }));
 
-// Explicit pre-flight handler (belt-and-suspenders for Vercel edge)
 app.options('*', cors());
 
-app.use(express.json({ limit: '1mb' })); // Only JSON metadata — no file bytes
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ── Routes ────────────────────────────────────────────────────────────────────
 app.use(['/api/upload', '/upload'], uploadRouter);
 app.use(['/api/download', '/download'], downloadRouter);
 
-// Legacy /d/:token redirect (for direct browser hits)
 app.get('/d/:token', (req, res) => {
   const host = req.get('host');
   let clientUrl = process.env.ALLOWED_ORIGIN;
@@ -57,12 +46,10 @@ app.get('/d/:token', (req, res) => {
   res.redirect(`${clientUrl}/d/${req.params.token}`);
 });
 
-// Health check
 app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', ts: new Date().toISOString() });
 });
 
-// Debug endpoint (safe - only shows masked env info)
 app.get(['/api/debug', '/debug'], (req, res) => {
   res.json({
     status: 'server reachable',
@@ -77,12 +64,16 @@ app.get(['/api/debug', '/debug'], (req, res) => {
   });
 });
 
-// 404 fallback for API
-app.use('/api', (req, res) => {
+app.use((req, res, next) => {
+  console.log(`[SERVER ERROR] encountered error 404: Page not found at ${req.method} ${req.originalUrl}`);
   res.status(404).json({ error: 'Not found' });
 });
 
-// ── Start ─────────────────────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.log(`[SERVER ERROR] encountered error 500 on ${req.method} ${req.originalUrl}:`, err);
+  res.status(500).json({ error: 'Internal Server Error', details: err.message });
+});
+
 const PORT = process.env.PORT || 3001;
 
 if (process.env.NODE_ENV !== 'production') {
@@ -91,8 +82,7 @@ if (process.env.NODE_ENV !== 'production') {
     startCronJobs();
   });
 } else {
-  // Vercel: cron doesn't run in serverless — use Vercel Cron or Supabase pg_cron
   startCronJobs();
 }
 
-module.exports = app; // exported for Vercel
+module.exports = app;

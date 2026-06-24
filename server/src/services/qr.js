@@ -1,10 +1,5 @@
 const QRCode = require('qrcode');
 
-/**
- * Generate a QR code as a base64 data URL.
- * @param {string} text - The URL to encode
- * @returns {Promise<string>} - data:image/png;base64,...
- */
 async function generateQR(text) {
   return QRCode.toDataURL(text, {
     errorCorrectionLevel: 'M',

@@ -28,7 +28,6 @@ export default function AuditLog({ token }) {
 
   return (
     <div className="audit-section">
-      {/* Summary row */}
       <div className="audit-summary">
         <div className="audit-stat">
           <span className="audit-stat__value">{downloadCount}</span>
@@ -86,7 +85,6 @@ export default function AuditLog({ token }) {
   );
 }
 
-// Minimal UA parser for display
 function parseUA(ua = '') {
   if (!ua) return '—';
   if (ua.includes('Chrome') && !ua.includes('Edg')) return '🌐 Chrome';

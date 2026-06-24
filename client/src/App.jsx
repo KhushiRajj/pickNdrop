@@ -5,7 +5,6 @@ import SharePanel from './components/SharePanel';
 import Downloader from './components/Downloader';
 import AuditLog from './components/AuditLog';
 
-// ── Shared Navigation Bar ─────────────────────────────────────────────────────
 function NavBar({ isDark, toggleTheme }) {
   return (
     <header className="site-nav">
@@ -28,9 +27,8 @@ function NavBar({ isDark, toggleTheme }) {
   );
 }
 
-// ── Upload Page ───────────────────────────────────────────────────────────────
 function UploadPage({ isDark, toggleTheme }) {
-  const [uploadResult, setUploadResult] = useState(null); // { token, shareUrl, qrDataUrl, options }
+  const [uploadResult, setUploadResult] = useState(null);
 
   return (
     <main className="page page--upload">
@@ -64,7 +62,6 @@ function UploadPage({ isDark, toggleTheme }) {
   );
 }
 
-// ── Download Page ─────────────────────────────────────────────────────────────
 function DownloadPage() {
   const { token } = useParams();
   const [searchParams] = useSearchParams();
@@ -89,13 +86,30 @@ function DownloadPage() {
   );
 }
 
-// ── App ───────────────────────────────────────────────────────────────────────
+function NotFoundPage() {
+  useEffect(() => {
+    console.log('[CLIENT ERROR] encountered error 404: Page not found at ' + window.location.pathname);
+  }, []);
+
+  return (
+    <main className="page page--download">
+      <div className="card downloader downloader--error">
+        <div className="error-icon">⚠️</div>
+        <h2>Error 404</h2>
+        <p className="muted">Page not found</p>
+        <a href="/" className="btn-upload" style={{ marginTop: '1.5rem', display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}>
+          Go to Upload Page
+        </a>
+      </div>
+    </main>
+  );
+}
+
 export default function App() {
-  const [isDark, setIsDark] = useState(true); // Default to Dark Theme
+  const [isDark, setIsDark] = useState(true);
 
   const toggleTheme = () => setIsDark(prev => !prev);
 
-  // Apply classes to document.body so styling variable scopes resolve globally
   useEffect(() => {
     if (isDark) {
       document.body.classList.add('theme-dark');
@@ -113,6 +127,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<UploadPage isDark={isDark} toggleTheme={toggleTheme} />} />
           <Route path="/d/:token" element={<DownloadPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>
     </BrowserRouter>

@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { initUpload, signParts, uploadChunkToS3, completeUpload, abortUpload } from '../api/client';
 
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
+const CHUNK_SIZE = 5 * 1024 * 1024;
 
 const TEMPLATES = [
   { id: 't1', name: 'youtube_intro_template.prproj', size: 8.5 * 1024 * 1024, label: 'YouTube Intro', desc: 'Modern intro with text overlays', type: 'application/octet-stream', bg: 'linear-gradient(135deg, #f43f5e, #be123c)' },
@@ -13,8 +13,8 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0); // 0–100
-  const [chunkProgress, setChunkProgress] = useState([]); // per-chunk %
+  const [progress, setProgress] = useState(0);
+  const [chunkProgress, setChunkProgress] = useState([]);
   const [error, setError] = useState('');
   const [options, setOptions] = useState({
     password: '',
@@ -28,10 +28,8 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
   const uploadStateRef = useRef(null);
   const [resumeSession, setResumeSession] = useState(null);
 
-  // Custom VEED modal states
-  const [activeTab, setActiveTab] = useState('blank-project'); // 'blank-project' | 'use-template'
+  const [activeTab, setActiveTab] = useState('blank-project');
   
-  // Quick actions simulations
   const [recording, setRecording] = useState(false);
   const [recTimer, setRecTimer] = useState(3);
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -40,7 +38,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
 
   const sessionKey = file ? `pickndrop-upload-${file.name}-${file.size}-${file.lastModified}` : '';
 
-  // Check for resume session when file changes
   useEffect(() => {
     if (file) {
       const saved = localStorage.getItem(sessionKey);
@@ -59,7 +56,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
     setResumeSession(null);
   }, [file, sessionKey]);
 
-  // Screen recording simulation timer
   useEffect(() => {
     let t;
     if (recording) {
@@ -67,7 +63,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
         t = setTimeout(() => setRecTimer(v => v - 1), 1000);
       } else {
         setRecording(false);
-        // Create simulated recorded file
         loadMockMedia('recorded_clip.webm', 8.5 * 1024 * 1024, 'video/webm');
       }
     }
@@ -86,13 +81,11 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
     if (f) { setFile(f); setError(''); }
   };
 
-  // Mock file generator
   const loadMockMedia = (filename, sizeBytes, mimeType) => {
     const blob = new Blob([new Uint8Array(sizeBytes)], { type: mimeType });
     const mockFile = new File([blob], filename, { type: mimeType, lastModified: Date.now() });
     setFile(mockFile);
     setError('');
-    // Clear link input / rec overlay
     setShowLinkInput(false);
     setUrlInput('');
   };
@@ -111,7 +104,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
       return;
     }
     setUrlError('');
-    // Simulate link fetch
     const name = urlInput.split('/').pop().split('?')[0] || 'remote_file.bin';
     loadMockMedia(name, 15.6 * 1024 * 1024, 'application/octet-stream');
   };
@@ -159,7 +151,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
 
     try {
       if (!uploadState) {
-        // ── Step 1: Init multipart ──────────────────────────────────────────────
         const { uploadId, s3Key, fileId } = await initUpload(file.name, file.size, file.type);
         uploadState = { uploadId, s3Key, fileId };
         uploadStateRef.current = uploadState;
@@ -174,11 +165,9 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
 
       const { uploadId, s3Key, fileId } = uploadState;
 
-      // ── Step 2: Sign all part URLs ─────────────────────────────────────────
       const partNumbers = Array.from({ length: totalParts }, (_, i) => i + 1);
       const { parts: signedParts } = await signParts(s3Key, uploadId, partNumbers);
 
-      // ── Step 3: Upload each chunk directly to S3 ───────────────────────────
       let totalUploaded = completedParts.length * CHUNK_SIZE;
 
       for (let i = 0; i < totalParts; i++) {
@@ -221,7 +210,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
         });
       }
 
-      // ── Step 4: Complete upload ────────────────────────────────────────────
       const parsedOptions = {
         password: options.password || undefined,
         maxDownloads: options.maxDownloads ? parseInt(options.maxDownloads) : undefined,
@@ -239,7 +227,7 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
       localStorage.removeItem(sessionKey);
       setResumeSession(null);
       setUploading(false);
-      onComplete(result, options); // pass raw options for SharePanel badges
+      onComplete(result, options);
     } catch (err) {
       setUploading(false);
       if (abortRef.current) {
@@ -268,7 +256,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
     }
   };
 
-  // Mimetype and name extensions based file icon selector
   const getFileEmoji = (mimeType, name) => {
     if (mimeType) {
       if (mimeType.startsWith('video/')) return '🎬';
@@ -292,11 +279,7 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
 
   return (
     <div className="veed-modal">
-      
-      {/* ── Main Content Panel ────────────────────────────────────────── */}
       <main className="veed-content">
-        
-        {/* If file is active: display encryption settings and upload controls */}
         {file ? (
           <div className="active-file-panel">
             <div className="active-file-card">
@@ -310,7 +293,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
               )}
             </div>
 
-            {/* Options Toggle */}
             {!uploading && (
               <button className="btn-text btn-text--options" style={{ marginTop: '0.5rem' }} onClick={() => setShowOptions(v => !v)}>
                 <span>{showOptions ? '▲' : '▼'}</span>
@@ -318,7 +300,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
               </button>
             )}
 
-            {/* Options Form */}
             {showOptions && !uploading && (
               <div className="options-panel">
                 <div className="options-grid">
@@ -393,7 +374,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
               </div>
             )}
 
-            {/* Upload Progress */}
             {uploading && (
               <div className="progress-wrap">
                 <div className="progress-bar">
@@ -413,7 +393,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
 
             {error && <p className="error-msg">{error}</p>}
 
-            {/* Action buttons */}
             {!uploading && (
               <div style={{ marginTop: '1.5rem' }}>
                 {resumeSession ? (
@@ -434,8 +413,6 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
             )}
           </div>
         ) : (
-          
-          /* Main Dashboard Views - Just Simple Drop Zone */
           <div className="veed-main-scroll" style={{ padding: '2.5rem' }}>
             <div
               className={`veed-dropzone ${dragging ? 'veed-dropzone--active' : ''}`}
@@ -460,9 +437,7 @@ export default function Uploader({ onComplete, isDark, toggleTheme }) {
             </div>
           </div>
         )}
-
       </main>
-
     </div>
   );
 }

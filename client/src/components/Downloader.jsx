@@ -36,7 +36,6 @@ export default function Downloader({ token, showAudit }) {
     setError('');
     try {
       const data = await downloadFile(token, pw || password || null);
-      // Trigger browser download via the presigned URL
       const a = document.createElement('a');
       a.href = data.url;
       a.download = data.filename;
@@ -94,7 +93,6 @@ export default function Downloader({ token, showAudit }) {
 
   return (
     <div className="downloader">
-      {/* File info card */}
       {info && (
         <div className="file-card">
           <div className="file-card__icon">{getFileEmoji(info.filename || '')}</div>
@@ -105,7 +103,6 @@ export default function Downloader({ token, showAudit }) {
         </div>
       )}
 
-      {/* Badges */}
       <div className="badge-row">
         {info?.hasPassword && <span className="badge badge--lock">🔒 Password protected</span>}
         {info?.isOneTime && <span className="badge badge--once">⚡ One-time link</span>}
@@ -116,7 +113,6 @@ export default function Downloader({ token, showAudit }) {
         )}
       </div>
 
-      {/* Password form */}
       {needsPassword ? (
         <form className="password-form" onSubmit={handlePasswordSubmit}>
           <label className="field__label">Enter password to download</label>
@@ -158,7 +154,6 @@ export default function Downloader({ token, showAudit }) {
         </button>
       )}
 
-      {/* Audit log */}
       {auditLogs && (
         <div className="audit-section">
           <h3 className="audit-section__title">Download Log <span className="badge">{auditLogs.downloadCount}</span></h3>

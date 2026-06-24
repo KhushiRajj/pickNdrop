@@ -19,7 +19,6 @@ export default function SharePanel({ result, options = {} }) {
 
   return (
     <div className="share-panel">
-      {/* Header */}
       <div className="share-panel__header">
         <div className="success-badge">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -30,7 +29,6 @@ export default function SharePanel({ result, options = {} }) {
         <h2 className="share-panel__title">Your link is ready</h2>
       </div>
 
-      {/* Security badges */}
       <div className="badge-row" style={{ marginBottom: '1.5rem' }}>
         {options.password     && <span className="badge badge--lock">🔒 Password protected</span>}
         {options.maxDownloads === '1' && <span className="badge badge--once">⚡ One-time link</span>}
@@ -47,7 +45,6 @@ export default function SharePanel({ result, options = {} }) {
           <span className="badge">🔓 Public link</span>}
       </div>
 
-      {/* QR Code */}
       <div className="qr-wrap">
         <img className="qr-img" src={qrDataUrl} alt="QR code for share link" />
         <button className="btn-qr" onClick={downloadQR}>
@@ -60,7 +57,6 @@ export default function SharePanel({ result, options = {} }) {
         </button>
       </div>
 
-      {/* Share Link */}
       <div className="link-box">
         <input
           id="share-link-input"
@@ -89,7 +85,6 @@ export default function SharePanel({ result, options = {} }) {
         </button>
       </div>
 
-      {/* Audit log link */}
       <a className="btn-text" href={`/d/${token}?audit=1`} target="_blank" rel="noreferrer">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>

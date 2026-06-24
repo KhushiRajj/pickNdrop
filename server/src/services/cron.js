@@ -2,19 +2,12 @@ const cron = require('node-cron');
 const supabase = require('../db/supabase');
 const { listInProgressUploads, abortMultipart, deleteObject } = require('./s3');
 
-/**
- * Cron job: runs every hour.
- * 1. Aborts S3 multipart uploads that are older than 24 hours and have no complete file record in DB.
- * 2. Cleans up expired or download-limit-reached files (deletes S3 objects and deletes DB records).
- */
 function startCronJobs() {
-  // Run every hour
   cron.schedule('0 * * * *', async () => {
     console.log('[CRON] Running hourly cleanup jobs...');
 
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24h ago
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // ─── 1. Clean up stale S3 multipart uploads ───────────────────────
     try {
       const uploads = await listInProgressUploads();
       for (const upload of uploads) {
@@ -29,7 +22,6 @@ function startCronJobs() {
         }
       }
 
-      // Also clean up incomplete file records older than 24h
       const { error: dbCleanErr } = await supabase
         .from('files')
         .delete()
@@ -42,7 +34,6 @@ function startCronJobs() {
       console.error('[CRON] Error during stale multipart cleanup:', err.message);
     }
 
-    // ─── 2. Clean up expired and spent share links ─────────────────────
     try {
       console.log('[CRON] Checking for expired or spent share links...');
       const { data: links, error: queryErr } = await supabase
