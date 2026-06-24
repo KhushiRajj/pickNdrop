@@ -1,6 +1,6 @@
 const { runCors } = require('../helper');
 const bcrypt = require('bcryptjs');
-const supabase = require('../../server/src/db/supabase');
+const supabase = require('../../../../server/src/db/supabase');
 
 async function loadShareLink(token) {
   const { data, error } = await supabase

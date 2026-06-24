@@ -1,5 +1,5 @@
 const { runCors } = require('../helper');
-const { signParts } = require('../../server/src/services/s3');
+const { signParts } = require('../../../../server/src/services/s3');
 
 module.exports = async (req, res) => {
   if (runCors(req, res)) return;

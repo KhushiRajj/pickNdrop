@@ -1,6 +1,6 @@
 const { runCors } = require('../helper');
-const supabase = require('../../server/src/db/supabase');
-const { abortMultipart } = require('../../server/src/services/s3');
+const supabase = require('../../../../server/src/db/supabase');
+const { abortMultipart } = require('../../../../server/src/services/s3');
 
 module.exports = async (req, res) => {
   if (runCors(req, res)) return;
